@@ -1,9 +1,10 @@
 import graphene
 from graphene_django import DjangoObjectType
-from mobile_payment.models import Transactions
+from mobile_payment.models import Transactions, PaymentServiceProvider
 from insuree.gql_queries import InsureeGQLType
-from contribution.gql_queries import PaymentServiceProviderGQLType
 from core import prefix_filterset, ExtendedConnection, filter_validity
+
+
 
 class TransactionsGQLType(DjangoObjectType):
 
@@ -23,8 +24,7 @@ class TransactionsGQLType(DjangoObjectType):
             "otp":["exact"],
             "status": ["exact"],
             "datetime": ["exact"],
-            **prefix_filterset("PaymentServiceProvider__", PaymentServiceProviderGQLType._meta.filter_fields),
-            **prefix_filterset("Insuree__", InsureeGQLType._meta.filter_fields),
+            **prefix_filterset("insuree__", InsureeGQLType._meta.filter_fields),
         }
         
         connection_class = ExtendedConnection
@@ -44,3 +44,22 @@ class VerifyGQLtype(graphene.ObjectType):
 
 class CustomMessagetype(graphene.ObjectType):
     message = graphene.String()     
+
+
+class ApiClientType(DjangoObjectType):
+    class Meta:
+
+        model = PaymentServiceProvider
+        interfaces = (graphene.relay.Node,)
+        filter_fields = {
+
+            "id": ["exact"],
+            "uuid": ["exact"],
+            "psp_name":["exact"],
+            "psp_username":["exact"],
+            "psp_account": ["exact"],
+            "email":["exact"],
+        }
+        exclude = ['psp_password', 'psp_pin']
+
+        connection_class = ExtendedConnection

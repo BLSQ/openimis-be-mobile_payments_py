@@ -1,23 +1,24 @@
 import pathlib
 import graphene
+import graphql_jwt
 import logging
 from typing import Optional
 from graphene.relay import mutation
-from graphene import InputObjectType
 from core import filter_validity
 from core.schema import OpenIMISMutation
-from graphene import relay
 from core.utils import TimeUtils
 from datetime import date
-from core.models import MutationLog
 from mobile_payment.apps import MobilePaymentConfig
-from .models import Transactions, TransactionMutation, Insuree
-from contribution.models import PaymentServiceProvider, Premium, Policy
+from .models import Transactions, Insuree, PaymentServiceProvider, Api_Records
+from contribution.models import Premium, Policy
+from graphql_jwt.shortcuts import get_token
 from django.utils.translation import gettext_lazy as _
 from .api_request import initiate_request, process_request
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError,PermissionDenied
 logger = logging.getLogger(__name__)
+
+
 
 
 class APIutilities:
@@ -69,13 +70,13 @@ def update_or_create_transaction(data, info):
     if not transaction_payment_service_provider:
         raise Exception (_("wallet_address_not_found") % (payment_service_provider_uuid,))
     #gets the insuree_wallet
-    data["PaymentServiceProvider"] = transaction_payment_service_provider
+    data["payment_service_provider"] = transaction_payment_service_provider
     insuree_uuid = data.pop("insuree_uuid") 
     #fetch insuree_wallet from the databaseand compare it with one inputed in the graphql
     transactioninsuree = Insuree.filter_queryset().filter(uuid=insuree_uuid).first()
     if not transactioninsuree:
         raise Exception (_("wallet_address_not_found") % (insuree_uuid,))
-    data["Insuree"] = transactioninsuree
+    data["insuree"] = transactioninsuree
     if transaction_uuid:
         #fetch transactions by uuid
         transaction = Transactions.objects.get(uuid=transaction_uuid)
@@ -120,12 +121,12 @@ class  InitiateTransactionMutation(OpenIMISMutation):
             #get insuree_wallet with existing uuid
             insuree_wallet = insuree.insuree_wallet
 
-            payment_service_provider = PaymentServiceProvider.objects.get(uuid=payment_service_provider_uuid)
-            if not payment_service_provider :
+            psp = PaymentServiceProvider.objects.get(uuid=payment_service_provider_uuid)
+            if not psp :
                 raise PermissionDenied (_("invalid payment_service_provider_uuid"))      
             #get wallet_address with existing uuid                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-            psp_address =payment_service_provider.PSPAccount
-            psp_pin = payment_service_provider.Pin
+            psp_address = psp.psp_account
+            psp_pin = psp.psp_pin
             #Initiate a request for payment
             Qcell_request = initiate_request(insuree_wallet,psp_address,amount,psp_pin,)
             if Qcell_request['responseCode'] == '1':
@@ -195,11 +196,21 @@ class ProcessPaymentInput(graphene.InputObjectType):
     chf_id = graphene.String(required=True)
     amount = graphene.Decimal(required=True)
     transaction_id = graphene.String(required = False)
+    psp_service_provider = graphene.String(required=False)
+
+class ApiClientInpuType(graphene.InputObjectType):
+    id = graphene.Int(required = False, read_only = True)
+    uuid = graphene.String(required=False)
+    psp_name = graphene.String(required=True, max_length=50)  # Define the maximum length here
+    psp_username = graphene.String(required=True, max_length=36)
+    psp_password = graphene.String(required=True, max_length=36)
+    email = graphene.String(required=False, max_length=100)
+    is_external_api_user = graphene.Boolean( default=True)
 
 def handle_payment(user, data):
     chf_id = data['chf_id']
     amount = data['amount']
-    transaction_id = data['transaction_id']
+    psp_service_provider_uuid = data['psp_service_provider']
 
     try:
         insuree = Insuree.objects.filter(chf_id=chf_id, validity_to__isnull=True).first()
@@ -212,7 +223,10 @@ def handle_payment(user, data):
     if policy:
         product = policy.product
         if amount == product.lump_sum:
-            premium = Premium.objects.create(amount=amount, policy=policy, pay_date=date.today(), pay_type="Mobile", receipt=transaction_id)
+            psp_service_provider = PaymentServiceProvider.objects.get(uuid=psp_service_provider_uuid)
+            transactions = Transactions.objects.create(amount = amount, payment_service_provider=psp_service_provider, status = 1)
+            transactions.save()
+            premium = Premium.objects.create(amount=amount, policy=policy, pay_date=date.today(), pay_type="Mobile", transaction=transactions)
             premium.save()
             update_policy(premium,policy)
             return {'success': True}
@@ -241,15 +255,22 @@ class ProcessPayment(graphene.Mutation):
         try:
             if info.context.user is AnonymousUser:
                 raise ValidationError(_("mutation.authentication_required"))
-
+            
+            username = info.context.user.username
+            psp = PaymentServiceProvider.objects.get(interactive_user__login_name=username,  is_external_api_user=True)
+            if not psp:
+                raise ValidationError(
+                "You are not authorized to perform this operation")
+            input_data['psp_service_provider_uuid'] = psp.uuid
             result = handle_payment(info,input_data)
+            api_record = Api_Records.objects.create(request_date=input_data, response_date=result)
+            api_record.save()
             if result["success"]:
                 return "Payment process successful."
             else:
                 return result["message"]
         except Exception as exc:
+            api_record = Api_Records.objects.create(request_date=input_data, response_date=str(exc))
+            api_record.save()
             raise ValidationError("Process failed to work: " + str(exc))
-        
-
-
 

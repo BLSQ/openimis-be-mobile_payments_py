@@ -8,6 +8,8 @@ DEFAULT_CFG = {
       "gql_query_transactions_perms":["111001"],
       "gql_mutation_create_transaction_perms":["1110002"],
       "gql_mutation_update_transaction_perms":["1110004"],
+      "gql_mutation_verify_insuree_perms":["1110003"],
+      "gql_mutation_process_payment_perms":["1110001"],
         
 }
 
@@ -17,12 +19,16 @@ class MobilePaymentConfig(AppConfig):
     gql_query_transactions_perms = []
     gql_mutation_create_transaction_perms =[]
     gql_mutation_update_transaction_perms = []
+    gql_mutation_verify_insuree_perms = []
+    gql_mutation_process_payment_perms = []
 
     def _configure_perms(self, cfg):
           MobilePaymentConfig.default_validations_disabled = cfg["default_validations_disabled"]
           MobilePaymentConfig.gql_query_transactions_perms = cfg["gql_query_transactions_perms"]
           MobilePaymentConfig.gql_mutation_create_transaction_perms = cfg["gql_mutation_create_transaction_perms"]
           MobilePaymentConfig.gql_mutation_update_transaction_perms = cfg["gql_mutation_update_transaction_perms"]
+          MobilePaymentConfig.gql_mutation_verify_insuree_perms = cfg["gql_mutation_verify_insuree_perms"]
+          MobilePaymentConfig.gql_mutation_process_payment_perms = cfg["gql_mutation_process_payment_perms"]
 
     def ready(self):
             from core.models import ModuleConfiguration

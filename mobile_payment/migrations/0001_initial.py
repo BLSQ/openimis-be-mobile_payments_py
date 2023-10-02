@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('core', '0016_add_last_login_on_interactive_user'),
         ('contribution', '0015_auto_20230810_1610'),
-        ('insuree', '0018_alter_insuree_options'),
+        ('insuree', '0003_insureepolicy'),
     ]
 
     operations = [
