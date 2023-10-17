@@ -59,13 +59,15 @@ class Query(graphene.ObjectType):
             {
                 "product_name": policy.product.name,
                 "amount": policy.product.lump_sum,
-                "status": policy.status
+                "status": policy.status,
+                "product_code": policy.product.code,
+                "token": policy.uuid
             } for policy in policies
         ]
     
-        policie = Policy.objects.filter(family=insuree.family, validity_to__isnull=True).first()
-        if not policie:
-            return VerifyGQLtype(message="policy does not exist")
+        # policie = Policy.objects.filter(family=insuree.family, validity_to__isnull=True).first()
+        if not policies:
+            return VerifyGQLtype(message="insuree does not have a policy Contact NHIS for more information")
     
         return VerifyGQLtype(
             first_name=insuree.other_names,
@@ -127,6 +129,10 @@ class Query(graphene.ObjectType):
             filters.append( Q(mutations__mutation__client_mutation_id=client_mutation_id) )
 
         return gql_optimizer.query(Transactions.objects.filter(*filters).all(), info)
+    
+    def resolve_wallet(self, info, **kwargs):
+        if not info.context.user.has_perms(MobilePaymentConfig.gql_query_payment_service_provider):
+            raise PermissionDenied(_("unauthorized"))
 
 
 class Mutation(graphene.ObjectType):
@@ -134,6 +140,9 @@ class Mutation(graphene.ObjectType):
     initiate_Transaction = InitiateTransactionMutation.Field()
     process_Transaction =  ProcessTransactionMutation.Field()
     process_payment = ProcessPayment.Field()
+    create_payment_service_provider =  CreatePaymentServiceProvider.Field()
+    update_payment_service_provider =  UpdatePaymentServiceProvider.Field()
+    delete_payment_service_provider =  DeletePaymentServiceProvider.Field()
 
 
 def on_transaction_mutation(kwargs, k= "uuid"):

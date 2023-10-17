@@ -100,6 +100,7 @@ class Transactions(core_models.VersionedModel):
     transaction_id =  models.CharField(db_column="transaction_id", blank=True, max_length=125)
     otp = models.CharField(db_column="OTP", blank=True, null=True, max_length= 10)
     status = models.BooleanField(db_column="transaction_status", blank=True, default= False)
+    json_content = models.JSONField(db_column="Json_content", blank=True, null=True)
     datetime = models.DateTimeField(db_column="Datetime", blank=True, default=timezone.now)
 
     class Meta():

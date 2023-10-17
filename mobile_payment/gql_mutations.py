@@ -1,5 +1,6 @@
 import pathlib
 import graphene
+import json
 import graphql_jwt
 import logging
 from typing import Optional
@@ -7,10 +8,12 @@ from graphene.relay import mutation
 from core import filter_validity
 from core.schema import OpenIMISMutation
 from core.utils import TimeUtils
+from core.models import InteractiveUser
 from datetime import date
 from mobile_payment.apps import MobilePaymentConfig
 from .models import Transactions, Insuree, PaymentServiceProvider, Api_Records
 from contribution.models import Premium, Policy
+from product.models import Product
 from graphql_jwt.shortcuts import get_token
 from django.utils.translation import gettext_lazy as _
 from .api_request import initiate_request, process_request
@@ -39,10 +42,20 @@ class TransactionBase:
     otp = graphene.String(required = False)
     datetime = graphene.DateTime(required= False)
     
+class PaymentServiceProviderInputType(OpenIMISMutation.Input):
+    id = graphene.Int(required = False, read_only = True)
+    uuid = graphene.String(required=False)
+    psp_account = graphene.String (required=False)
+    psp_name = graphene.String(required=True)
+    psp_pin = graphene.String(required= False)
+    interactive_user_uuid= graphene.String(required= False)
+    is_external_api_user = graphene.Boolean(default = False)
     
-
-
-
+def reset_payment_service_provider_before_udate(payment_service_provider):
+    payment_service_provider.psp_name = None
+    payment_service_provider.psp_account = None
+    payment_service_provider.psp_pin = None
+    
 def reset_transaction_before_update(transaction):
     transaction.amount = None
     transaction.insuree_uuid = None
@@ -50,6 +63,33 @@ def reset_transaction_before_update(transaction):
     transaction.status = None
     transaction.transaction_id = None
     transaction.datetime = None
+    
+def update_or_create_payment_service_provider(data, user):
+    # Check if client_mutation_id is passed in data
+    if "client_mutation_id" in data:
+        data.pop('client_mutation_id')
+    # Check if client_mutation_label is passed in data
+    if "client_mutation_label" in data:
+        data.pop('client_mutation_label')
+    from core.utils import TimeUtils
+    data['validity_from'] = TimeUtils.now()
+    interactive_user_uuid = data.pop("interactive_user_uuid") if "" in data else None
+    # fetch insuree_wallet from the database and compare it with the one inputed from graphql
+    interactive_user = InteractiveUser.filter_queryset().filter(uuid=interactive_user_uuid).first()
+    data["interactive_user"] = interactive_user
+    # get wallet_uuid from data
+    Payment_service_provider_uuid = data.pop("uuid") if "uuid" in data else None
+    if Payment_service_provider_uuid:
+        # fetch wallet by uuid
+        payment_service_provider = PaymentServiceProvider.objects.get(uuid=Payment_service_provider_uuid)
+        payment_service_provider.save_history()
+        [setattr(payment_service_provider , key, data[key]) for key in data]
+    else:
+        # create new wallet object
+        payment_service_provider  = PaymentServiceProvider.objects.create(**data)
+    # save record to database
+    payment_service_provider.save()
+    return payment_service_provider 
 
 
 def update_or_create_transaction(data, info):
@@ -87,6 +127,105 @@ def update_or_create_transaction(data, info):
         transaction = Transactions.objects.create(**data)
     transaction.save()
     return transaction
+
+class CreatePaymentServiceProvider(OpenIMISMutation):
+    """
+    Add a Merchant wallet address for mobile money payment
+    """
+    _mutation_module = "mobile_payment"
+    _mutation_class = "CreatePaymentServiceProvider"
+
+    class Input(PaymentServiceProviderInputType):
+        pass
+
+    @classmethod
+    def async_mutate(cls, user, **data)  -> Optional[str]: 
+        try:
+            
+            if type(user) is AnonymousUser or not user.id:
+                raise ValidationError(
+                _("mutation.authentication_required"))
+            #checks if user has permission to create a wallet
+            if not user.has_perms(MobilePaymentConfig.gql_mutation_create_paymnet_service_provider):
+                raise PermissionDenied(_("unauthorized"))
+            client_mutation_id = data.get("client_mutation_id")
+            # it create data inputs from the premium graphql
+            payment_service_provider = update_or_create_payment_service_provider(data, user)
+            PaymentServiceProviderMutation.object_mutated(user, client_mutation_id=client_mutation_id, payment_service_provider=payment_service_provider)
+            return None
+        except Exception as exc:
+            logger.debug("Exception when deleting premium %s", exc_info=exc)
+            return [{
+                'message': _("wallet.mutation.failed_to_create_wallet"),
+                'detail': str(exc)}
+            ]
+
+
+class UpdatePaymentServiceProvider(OpenIMISMutation):
+    _mutation_module = "mobile_payment"
+    _mutation_class = "UpdatePaymentServiceProvider"
+
+
+    class Input (PaymentServiceProviderInputType):
+        pass
+
+    @classmethod
+    def async_mutate(cls, user, **data):
+
+        try:
+            if not user.has_perms(MobilePaymentConfig.gql_mutation_update_paymnet_service_provider):
+                raise PermissionDenied(_("unauthorized"))
+            #get merchant uuid
+            payment_service_provider_uuid = data.pop('uuid')
+            if payment_service_provider_uuid:
+                #fetch merchnat uuid from database
+                payment_service_provider = PaymentServiceProvider.objects.get(uuid = payment_service_provider_uuid)
+                [setattr(payment_service_provider, key, data[key]) for key in data]
+            else:
+                 #raise an error if uuid is not valid or does not exist
+                 raise PermissionDenied(_("unauthorized"))
+            #saves update dta
+            payment_service_provider.save()
+            return None
+        except Exception as exc:
+            return [{
+                
+                'message': _("wallet.mutation.failed_to_update_wallet"),
+                'detail': str(exc)}]
+
+
+class DeletePaymentServiceProvider(OpenIMISMutation):
+
+    _mutation_module = 'mobile_payment'
+    _mutation_class = 'DeletePaymentServiceProvider'
+
+
+    class Input(OpenIMISMutation.Input):
+        uuid = graphene.String()
+
+    @classmethod
+    def async_mutate(cls, user, **data):
+
+        try:
+             # Check if user has permission
+            if not user.has_perms(MobilePaymentConfig.gql_mutation_delete_paymnet_service_provider):
+                raise PermissionDenied(_("unauthorized"))
+            
+             # get programs object by uuid
+            payment_service_provider = PaymentServiceProvider.objects.get(uuid=data['uuid'])
+
+            # get current date time
+            from core import datetime
+            now = datetime.datetime.now()
+
+            # Set validity_to to now to make the record invalid
+            payment_service_provider.validity_to = now
+            payment_service_provider.save()
+            return None
+        except Exception as exc:
+            return [{
+                'message': "Faild to delete Wallet. An exception had occured",
+                'detail': str(exc)}]
 
 
 class  InitiateTransactionMutation(OpenIMISMutation):
@@ -139,16 +278,10 @@ class  InitiateTransactionMutation(OpenIMISMutation):
             logger.exception("transaction.mutation.failed_to_create_transaction")
             return [{
                     'message': _("transaction.mutation.failed_to_create_transaction"),
-                    'detail': str(exc)}]    
-    
-        
-
-        
+                    'detail': str(exc)}] 
         
     
         
-
-
 class  ProcessTransactionMutation(OpenIMISMutation):
     """
     create a mutaion for making a trasaction
@@ -191,26 +324,28 @@ class  ProcessTransactionMutation(OpenIMISMutation):
                     'detail': str(exc)}]
 
 # *********************************** Afri Money ***********************************           
-
+class ProductInput(graphene.InputObjectType):
+    product_name = graphene.String(required=True)
+    product_code = graphene.String(required=True)
+    token = graphene.String(required = True)
 class ProcessPaymentInput(graphene.InputObjectType):
     chf_id = graphene.String(required=True)
     amount = graphene.Decimal(required=True)
     transaction_id = graphene.String(required = False)
-    psp_service_provider = graphene.String(required=False)
-
-class ApiClientInpuType(graphene.InputObjectType):
-    id = graphene.Int(required = False, read_only = True)
-    uuid = graphene.String(required=False)
-    psp_name = graphene.String(required=True, max_length=50)  # Define the maximum length here
-    psp_username = graphene.String(required=True, max_length=36)
-    psp_password = graphene.String(required=True, max_length=36)
-    email = graphene.String(required=False, max_length=100)
-    is_external_api_user = graphene.Boolean( default=True)
+    psp_service_provider_uuid = graphene.String(required = False)
+    policy = graphene.Field( ProductInput, required = False)
+    json_content = graphene.JSONString()
 
 def handle_payment(user, data):
     chf_id = data['chf_id']
     amount = data['amount']
-    psp_service_provider_uuid = data['psp_service_provider']
+    psp_service_provider_uuid = data['psp_service_provider_uuid']
+    product_name = data['policy']['product_name']
+    product_code = data['policy']['product_code']
+    token = data['policy']['token']
+    json_content = json.dumps(data.get('json_content', []))
+    
+    
 
     try:
         insuree = Insuree.objects.filter(chf_id=chf_id, validity_to__isnull=True).first()
@@ -219,26 +354,34 @@ def handle_payment(user, data):
     except Insuree.DoesNotExist:
         return {"success": False, "message": "Please pass in the correct CHF ID."}
 
-    policy = Policy.objects.filter(family=insuree.family, status=1).first()
+    
+    policy = Policy.objects.filter(family=insuree.family, uuid=token).first()
     if policy:
         product = policy.product
-        if amount == product.lump_sum:
+        if (
+            amount == product.lump_sum
+            and policy.status == Policy.STATUS_IDLE
+            and product_name == product.name
+            and product_code == product.code
+        ):
             psp_service_provider = PaymentServiceProvider.objects.get(uuid=psp_service_provider_uuid)
-            transactions = Transactions.objects.create(amount = amount, payment_service_provider=psp_service_provider, status = 1)
+            transactions = Transactions.objects.create(amount=amount, payment_service_provider=psp_service_provider, status=1, json_content=json_content)
             transactions.save()
             premium = Premium.objects.create(amount=amount, policy=policy, pay_date=date.today(), pay_type="Mobile", transaction=transactions)
             premium.save()
-            update_policy(premium,policy)
+            update_policy(premium, policy)
             return {'success': True}
-        elif amount < product.lump_sum and policy.status == Policy.STATUS_IDLE:
+        elif amount < product.lump_sum and policy.status == Policy.STATUS_IDLE and product_name == product.name and product_code == product.code:
             return {'success': False, 'message': "Amount is too small. It needs to be the exact amount of the product."}
+        elif amount > product.lump_sum and policy.status == Policy.STATUS_IDLE and product_name == product.name and product_code == product.code:
+            return {'success': False, 'message': "Amount is too large. pls enter the excatt amount the product cost."}
+        elif amount == product.lump_sum and policy.status != Policy.STATUS_IDLE and product_name == product.name and product_code == product.code:
+            return {'success': False, 'message': "Please check again if your policy you are trying to pay for is idle  or active."}
         else:
-            return {'success': False, 'message': "Please check again if your policy is already active or has expired. Only policies with idle status can make payment at the moment."}
+            return {'success': False, 'message': "Please check again if your the policy is already active or has expired. Only policies with idle status can make payment at the moment."}
     else:
-        return {"success": False, "message": "The policy you are trying to pay for is either active or expired. Please contact NHIS officer for your registered policies."}
-
-
-
+        return {"success": False, "message": "insuree does not have polciy contact NHIS for more information."}
+        
 def update_policy(premium, policy):
     policy.status = Policy.STATUS_ACTIVE
     policy.effective_date = premium.pay_date if premium.pay_date > policy.start_date else policy.start_date
@@ -261,7 +404,9 @@ class ProcessPayment(graphene.Mutation):
             if not psp:
                 raise ValidationError(
                 "You are not authorized to perform this operation")
+        
             input_data['psp_service_provider_uuid'] = psp.uuid
+            print(input_data)
             result = handle_payment(info,input_data)
             api_record = Api_Records.objects.create(request_date=input_data, response_date=result)
             api_record.save()

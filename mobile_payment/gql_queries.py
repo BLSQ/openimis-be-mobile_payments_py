@@ -35,6 +35,8 @@ class PolicyType(graphene.ObjectType):
     product_name = graphene.String()
     amount = graphene.Float()
     status = graphene.Int()
+    product_code = graphene.String()
+    token = graphene.String()
 
 class VerifyGQLtype(graphene.ObjectType):
     first_name = graphene.String()
