@@ -1,13 +1,43 @@
 ## openIMIS Backend Mobile_Payment Modoule
 This repository holds the files of the openIMIS Backend payment reference module.
 
-## Qmoney Setup and Mutation
 
-<table align="center"><tr><td>Qmoney has the following mutations which is ` InitiateTransactionMutation` and ` ProcessTransactionMutation ` an accountant needs to initatiate a transaction by selecting the following fields ` amount `, ` paymetServiceProviderUuid`, `insureeUuid ` then the insuree will then receive an otp whcih will be sent to his phone number and share that otp with the accountant whcich will be enetred by the accountanct to process the transaction. The follwing fields are entered in the ProcessTransaction ` uuid `,  ` otp `, ` amount ` ` insureeUuid` and  ` paymentServiceProvider`. 
+The Mobile Payment module is designed to enable seamless payment processing for insured policies. This module comprises two distinct workflows:
+
+1. **Integration with Qmoney**: In this workflow, the module establishes a connection with the Qmoney payment service provider, facilitating secure and efficient payment processing for policyholders.
+
+2. **Endpoint Exposition**: The module also exposes two essential endpoints, `Verify_insuree` and `Process_payment`. These endpoints can be utilized by other payment service providers seeking to offer policyholders the ability to make payments through their services. This flexibility allows for easy integration with a variety of payment providers, making it a versatile solution for policyholder payments.
+
+Please refer to the documentation for further information on using and configuring this module.
+
+
+# Qmoney Integration Guide
+
+Qmoney provides two essential mutations: `InitiateTransactionMutation` and `ProcessTransactionMutation`. These mutations enable seamless payment processing between accountants and insured individuals.
+
+## Initiating a Transaction
+
+To initiate a transaction, an accountant is required to select the following fields:
+- `amount`
+- `paymentServiceProviderUuid`
+- `insureeUuid`
+
+Upon selection, an OTP is generated and sent to the insuree's phone number. The insuree is responsible for sharing this OTP with the accountant. The accountant will then enter the OTP to proceed with the transaction.
+
+## Processing a Transaction
+
+When processing a transaction, the following fields are required:
+- `uuid`
+- `otp`
+- `amount`
+- `insureeUuid`
+- `paymentServiceProvider`
+
+Once a transaction is initiated and successfully processed, it is added to the contribution table named "premium." The transaction details are stored by adding the transaction UUID to the "transaction_uuid" field, which acts as a foreign key.
 
 ### Note
-For an Insuree to receicve an OTP he or she needs to have a qmnoey wallet informaion saved the in the  ` insuree_wallet ` field of the insuree model. When a transaction is initiated  the status is Zero  until transaction is successfuly processed it is changed to 1.
-</td></tr></table>
+
+For an insuree to receive an OTP, their Qmoney wallet information must be saved in the "insuree_wallet" field of the Insuree model. The status of a transaction is initially set to `0` when initiated and changes to `1` upon successful processing.
 
 
 The Qmoney needs the following setup before testing  
