@@ -8,7 +8,7 @@ The Mobile Payment module is designed to enable seamless payment processing for 
 
 2. **Endpoint Exposition**: The module also exposes two essential endpoints, `Verify_insuree` and `Process_payment`. These endpoints can be utilized by other payment service providers seeking to offer policyholders the ability to make payments through their services. This flexibility allows for easy integration with a variety of payment providers, making it a versatile solution for policyholder payments.
 
-Please refer to the documentation for further information on using and configuring this module.
+Qmoney implementation includes a frontend in the contrubution module of FE link: [openimis-fe-contribution_js](https://github.com/BLSQ/openimis-fe-contribution_js/tree/develop).
 
 
 # Qmoney Integration Guide
@@ -56,6 +56,17 @@ Ensure that you replace the placeholders <Grant Type>, <Authentication Username 
 
 These settings are crucial for creating a successful testing environment when working with Qmoney integration.
 
+### Test use case sample
+```
+PSP_QMONEY_GRANTTYPE=password
+PSP_QMONEY_USERNAME=14001502
+PSP_QMONEY_PASSWORD=Nhia@123
+PSP_QMONEY_AUTH_URL=https://uat-adpelite.qmoney.gm/login
+PSP_QMONEY_URL_INITIATE=https://uat-adpelite.qmoney.gm/getMoney
+PSP_QMONEY_URL_PROCESS=https://uat-adpelite.qmoney.gm/verifyCode
+```
+
+
 ## Configuration in `openimis-be_py/openIMIS/openIMIS/settings.py`
 
 To integrate Qmoney into your application, add the following code to your `openimis-be_py/openIMIS/openIMIS/settings.py` file:
@@ -70,6 +81,25 @@ PSP_QMONEY_URL_PROCESS = os.environ.get("PSP_QMONEY_URL_PROCESS")
 ```
 This configuration code is necessary to enable Qmoney integration within your application and should be placed in the specified settings file.
 
+## Creating a Payment Service Provider for Qmoney
+
+To facilitate integration with Qmoney, we've been provided with a test account that allows us to receive money. Below are the test account details:
+
+- `psp_name`: Qmoney
+- `psp_account`: 14001502
+- `psp_pin`: 1234
+
+These details have been included in our migration file. When you run the migration, it will automatically create the Payment Service Provider for Qmoney using the provided test account details. Please note that these details are intended for testing purposes, and if you plan to move to a production environment, you can update them accordingly to reflect the production configuration.
+
+### Add Qmoney Access Token
+
+In order to make requests to any of the Qmoney endpoints, you need an access token. The generation of the access token is already handled in the code, and all you have to do is add the following details in the `Api_utlity` model:
+
+- `name`: Qcell_token
+- `access_token`: `<generated access_token>`
+- `access_TokenExpiry`: `<access_token expiry date, e.g., 2023-08-07 14:58:39.136>`
+
+For Qmoney integration, the initial access token details are added during the migration process. If you are planning to transition to a production environment, you can choose to update the access_token field and the expiry date as needed. It's important to note that if the access token expires, the system automatically sends a new request to update the access token field. For more details on the implementation, you can refer to `mobile_payment/utils.py`.
 
 # Qmoney Mutation Example
 
@@ -114,26 +144,32 @@ mutation {
 
   }
 ```
-### step to test Qmoney from Graphql Play Ground
+# Accessing Custom Endpoints
 
-add
+The Mobile Payment module exposes two essential endpoints: `Verify_insuree` and `Process_payment`. These endpoints are designed to be utilized by other payment service providers that wish to enable policyholders to make payments through their services.
 
-## Afrimoney Setup test Mutation 
-The Afrimoney has two endpoint which is  ` verifyInsuree ` and ` processPayment ` this endpoints can only be accessed by an interactive_user that is selected in the process of a creating a payment serivce provider.
+## Configuring Payment Service Providers
 
+When configuring a Payment Service Provider (PSP), it's essential to consider the following:
 
-* Create a PaymentServiceProvider: You Can Create a Payment Service Provider from the django admin, the following needs to be considered if creating a payment servive provider 
-  - if the payment service provider is a third party that needs to access our api endpoint then thefollowing  fileds needs to be added ` psp_name ` , ` is_externapi ` ` interactive_user ` note if the field is_externapi and interactive_useris not selected,then both endpoint wont be accessible.
+- If the PSP is a third-party entity that requires access to these endpoints, you should provide the following information during configuration:
 
-  - if the payment serivice provider requires we connect to their endpoint then the following field can be considered `psp_name`, ` psp_account ` ,  ` psp_pin ` however other fields could be added as well if it is not on the payment_service_provider model.
-  Note other changes and codes needs to be written by the developer
+  - `psp_name`: The name of the Payment Service Provider.
+  - `is_external_api`: This field should be selected when the PSP intends to connect to our endpoint. It indicates that the payment service provider is an external entity requiring access to our services.
+  - `interactive_user`: This field represents a foreign key to the OpenIMIS core user models. Selecting an interactive user is crucial to specify the user authorized to make requests to our endpoint.
 
-* Generate an access_tooken: To generate an acess_token you need to use  the username and passowrd of the interactive user that was selected when creating a paymentserviceprovider in the django admin all mutation are provided below.
-
-**Note**
-<table align="center"><tr><td>To generate an access token, you need to create an interactive user and assign the necessary permissions for the specific actions you want to perform. Additionally, assign a payment service provider to the interactive user for it to work properly. The recommended way to assign an interactive user is through the Django Admin interface, where you can also manage permissions effectively.For now use the defualt interactive user detail to generate access_token</td></tr></table>
+Please make sure to select the `is_external_api` field when you want the Payment Service Provider to connect to our endpoint, and choose an appropriate `interactive_user` to define the user who will be granted the ability to make requests to our endpoint. These configurations are fundamental for effective control and management of access.
 
 
+## Generating Access Tokens
+
+To enable any Payment Service Provider to make requests to our endpoint, they must be provided with user details and use these details to generate an access token. This access token serves as the key to interact with our endpoint, allowing for secure communication.
+
+It's important to note that the user details should correspond to an interactive user that was created and added during the configuration process when setting up the Payment Service Provider. This interactive user is granted the necessary permissions and serves as the authorized entity for making requests to our endpoint.
+
+By ensuring that the user details are associated with an interactive user during the PSP configuration, you facilitate the secure generation of access tokens and maintain control over the interactions with our endpoint.
+
+## Mutation Example
 **mutation to generate access_token**
 
 ```
