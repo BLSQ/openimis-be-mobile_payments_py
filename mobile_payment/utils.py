@@ -44,11 +44,14 @@ def get_access_token(api_name):
 
 def requests_new_access_token(api_name):
     try:
-        auth_url =settings.QCELL_AUTH_URL
+        auth_url =settings.PSP_QMONEY_AUTH_URL
+        grantype=settings.PSP_QMONEY_GRANTTYPE
+        username = settings.PSP_QMONEY_USERNAME
+        password = settings.PSP_QMONEY_PASSWORD
         data ={  
-            "grantType" :"password", 
-            "username"  :"14001502", 
-            "password"  :"Nhia@123" 
+            "grantType" : grantype, 
+            "username"  :username, 
+            "password"  :password 
         }
 
 
