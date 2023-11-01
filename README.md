@@ -10,6 +10,8 @@ The Mobile Payment module is designed to enable seamless payment processing for 
 
 Qmoney implementation includes a frontend in the contrubution module of FE link: [openimis-fe-contribution_js](https://github.com/BLSQ/openimis-fe-contribution_js/tree/develop).
 
+"Link to the workflow diagram and database of the Mobile Payment module can be found here [workflow](https://github.com/BLSQ/openimis-be-mobile_payments_py/tree/feature/gambia/workflow)
+
 
 # Qmoney Integration Guide
 
