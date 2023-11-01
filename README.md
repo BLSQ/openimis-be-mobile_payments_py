@@ -40,30 +40,38 @@ Once a transaction is initiated and successfully processed, it is added to the c
 For an insuree to receive an OTP, their Qmoney wallet information must be saved in the "insuree_wallet" field of the Insuree model. The status of a transaction is initially set to `0` when initiated and changes to `1` upon successful processing.
 
 
-The Qmoney needs the following setup before testing  
+# Qmoney Testing Setup
 
-* add the following code in ` openimis-be_py/.env `
+Before you can begin testing with Qmoney, you need to configure the following variables in your `openimis-be_py/.env` file:
 
+```env
+PSP_QMONEY_GRANTTYPE=<Grant Type>
+PSP_QMONEY_USERNAME=<Authentication Username for Authorization>
+PSP_QMONEY_PASSWORD=<Password for Authentication>
+PSP_QMONEY_AUTH_URL=<URL for Authentication and Access Token Generation>
+PSP_QMONEY_URL_INITIATE=<URL for Initiating Money Transfer>
+PSP_QMONEY_URL_PROCESS=<URL for Verifying Money Transfer
 ```
-GRANTTYPE=password
-USERNAME=14001502
-PASSWORD=Nhia@123
-QCELL_AUTH_URL=https://uat-adpelite.qmoney.gm/login
-QCELL_URL_INITIATE=https://uat-adpelite.qmoney.gm/getMoney
-QCELL_URL_PROCESS=https://uat-adpelite.qmoney.gm/verifyCode
+Ensure that you replace the placeholders <Grant Type>, <Authentication Username for Authorization>, and other placeholders with the actual values specific to your Qmoney configuration.
 
-```
+These settings are crucial for creating a successful testing environment when working with Qmoney integration.
 
-* add the following code in your ` openimis-be_py/openIMIS/openIMIS/settings.py `
+## Configuration in `openimis-be_py/openIMIS/openIMIS/settings.py`
 
+To integrate Qmoney into your application, add the following code to your `openimis-be_py/openIMIS/openIMIS/settings.py` file:
+
+```python
+PSP_QMONEY_AUTH_URL = os.environ.get("PSP_QMONEY_AUTH_URL")
+PSP_QMONEY_GRANTTYPE = os.environ.get('PSP_QMONEY_GRANTTYPE')
+PSP_QMONEY_USERNAME = os.environ.get('PSP_QMONEY_USERNAME')
+PSP_QMONEY_PASSWORD = os.environ.get('PSP_QMONEY_PASSWORD')
+PSP_QMONEY_URL_PAYMENT = os.environ.get("PSP_QMONEY_URL_INITIATE")
+PSP_QMONEY_URL_PROCESS = os.environ.get("PSP_QMONEY_URL_PROCESS")
 ```
-QCELL_AUTH_URL = os.environ.get("QCELL_AUTH_URL")
-GRANTTYPE = os.environ.get('GRANTTYPE')
-USERNAME = os.environ.get('USERNAME')
-PASSWORD = os.environ.get('PASSWORD')
-QCELL_URL_PAYMENT = os.environ.get("QCELL_URL_INITIATE")
-QCELL_URL_PROCESS = os.environ.get("QCELL_URL_PROCESS")
-```
+This configuration code is necessary to enable Qmoney integration within your application and should be placed in the specified settings file.
+
+
+#Qmoney Mutation Examole
 
 #### Initiate Transaction Mutation sample
 ```
