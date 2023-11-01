@@ -9,7 +9,7 @@ from .utils import access_token
 
 def initiate_request(insuree_wallet:str, merchant_wallet:str, amount:float, pin:str) :
     try:
-        url = settings.QCELL_URL_PAYMENT
+        url = settings.PSP_QMONEY_URL_PAYMENT
         tokens = access_token()
 
         payload = json.dumps({
@@ -22,7 +22,7 @@ def initiate_request(insuree_wallet:str, merchant_wallet:str, amount:float, pin:
                 },
                 "serviceId": "MOBILE_MONEY",
                 "productId": "NHIA_GETMONEY",
-                "remarks": "add",
+                "remarks": "add", 
                 "payment": [
                 {
                     "amount": amount
@@ -53,7 +53,7 @@ def initiate_request(insuree_wallet:str, merchant_wallet:str, amount:float, pin:
 
 def process_request(otp: str, transaction_id: str,) :
     try:
-        url = settings.QCELL_URL_PROCESS
+        url = settings.PSP_QMONEY_URL_PROCESS
         tokens = access_token()
 
         payload = json.dumps({
