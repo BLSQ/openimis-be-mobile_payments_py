@@ -54,7 +54,7 @@ class Query(graphene.ObjectType):
         except Insuree.DoesNotExist:
             return CustomMessagetype(message="chf_id does not exist")
     
-        policies = Policy.objects.filter(family=insuree.family, validity_to__isnull=True).all()
+        policies = Policy.objects.filter(family=insuree.family, validity_to__isnull=True, status__in=[Policy.STATUS_IDLE, Policy.STATUS_EXPIRED]).all()
         policies_list = [
             {
                 "product_name": policy.product.name,
@@ -64,8 +64,7 @@ class Query(graphene.ObjectType):
                 "token": policy.uuid
             } for policy in policies
         ]
-    
-        # policie = Policy.objects.filter(family=insuree.family, validity_to__isnull=True).first()
+
         if not policies:
             return VerifyGQLtype(message="insuree does not have a policy Contact NHIS for more information")
     
