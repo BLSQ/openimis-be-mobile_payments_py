@@ -13,46 +13,17 @@ class  PaymentServiceProvider(core_models.VersionedModel):
     id = models.AutoField(db_column="Psp_ID", primary_key=True)
     uuid = models.CharField(db_column="Psp_UUID", max_length=36, default=uuid.uuid4, unique=True)
     psp_name = models.CharField(db_column= "Psp_Name", max_length=50, unique=True)
-    psp_username = models.CharField(db_column= "Psp_Username", max_length= 36, blank=True, null=True)
-    psp_password = models.CharField(db_column= "Psp_Password", max_length=128, blank=True, null=True)
     psp_account = models.CharField( db_column= "Psp_Account", max_length= 36,blank=True, null=True)
     psp_pin = models.CharField(db_column=" Psp_Pin", max_length=128, blank=True, null=True)
     email = models.EmailField(db_column="Psp_email", max_length=100, blank=True, null=True)
-    access_token = models.CharField(db_column="Api_client_access_token", max_length=128, blank=True, null=True)
     date_created = models.DateTimeField(db_column="Date_created", blank=True, default=timezone.now)
-    has_login = models.BooleanField(db_column='HasLogin', blank=True, null=True)
     is_external_api_user = models.BooleanField(default=False)
     interactive_user = models.ForeignKey("core.InteractiveUser", on_delete=models.CASCADE, blank=True, null=True)
     json_content = models.TextField(db_column="Json_content", blank=True, null=True)
 
     def __str__(self):
         return self.psp_name
-    
-    USERNAME_FIELD = 'psp_username'
 
-    
-    @property
-    def username(self):
-        return self.psp_username
-
-    def get_username(self):
-        return self.psp_username
-    
-    def set_password(self, raw_password):
-        self.psp_password = make_password(raw_password)
-        print(self.psp_password)
-        return self.psp_password
-
-  
-    def check_passwords(self, raw_password):
-        print("Provided password:", raw_password)
-        print("Stored password:", self.psp_password)
-        
-        password_match = check_password(raw_password, self.psp_password)
-        print("Password match:", password_match)
-        
-        return password_match
-    
     @classmethod
     def get_queryset(cls,queryset, user):
         if isinstance(user, ResolveInfo):
