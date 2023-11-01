@@ -71,7 +71,7 @@ PSP_QMONEY_URL_PROCESS = os.environ.get("PSP_QMONEY_URL_PROCESS")
 This configuration code is necessary to enable Qmoney integration within your application and should be placed in the specified settings file.
 
 
-#Qmoney Mutation Examole
+# Qmoney Mutation Example
 
 #### Initiate Transaction Mutation sample
 ```
