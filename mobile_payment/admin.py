@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Api_Utilities, Transactions, PaymentServiceProvider
+from .models import ApiUtilitie, PaymentTransaction, PaymentServiceProvider
 # Register your models here.
-admin.site.register(Api_Utilities)
-admin.site.register(Transactions)
+admin.site.register(ApiUtilitie)
+admin.site.register(PaymentTransaction)
 admin.site.register(PaymentServiceProvider)
 
