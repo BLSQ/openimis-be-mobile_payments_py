@@ -1,32 +1,32 @@
 import datetime
 import requests
+import logging
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 import json
-
-from .models import Api_Utilities
+from .models import ApiUtilitie
 import threading
 
-lock = threading.Lock()
+logger = logging.getLogger(__name__)
 
+lock = threading.Lock()
 
 def access_token():
     # make it thread safe
     with lock:
         try:
             NOW = datetime.now()
-            api_name = 'Qcell_token'
+            api_name = 'Qmoney_token'
             access_token = get_access_token(api_name)
             return {"Authorization": f"Bearer {access_token}"}
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            logging.exception("failed to get access token")
             return e
 
 
 def get_access_token(api_name):
-    api_utility = Api_Utilities.objects.get(name=api_name)
+    api_utility = ApiUtilitie.objects.get(name=api_name)
     current_token = api_utility.access_token
     token_expiry_date = api_utility.access_TokenExpiry
 
@@ -48,20 +48,21 @@ def requests_new_access_token(api_name):
         grantype=settings.PSP_QMONEY_GRANTTYPE
         username = settings.PSP_QMONEY_USERNAME
         password = settings.PSP_QMONEY_PASSWORD
+        authBearerToken=settings.PSP_QMONEY_AUTH_BEARER_TOKEN
         data ={  
-            "grantType" : grantype, 
-            "username"  :username, 
-            "password"  :password 
+            "grantType": grantype, 
+            "username":  username, 
+            "password": password 
         }
 
 
         headers = {
                 "Content-Type": "application/json", 
-                "Authorization": "Basic TkhJQV9BQ0NFU1NfQ0hBTk5FTDpuaGlhQEAxMjM"
+                "Authorization": f"Basic {authBearerToken}"
                 }
 
 
-        response = requests.post(auth_url, headers=headers, data=json.dumps(data))
+        response = requests.post(auth_url, headers=headers, data=json.dumps(data), timeout=5)
         response_data = response.json()
         if response.status_code in [200,201] and response_data['responseCode'] == '1':
             new_token = response_data ['data']['access_token']
