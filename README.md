@@ -184,12 +184,15 @@ The following can be added in an insurees detail of insuree_wallet
 #### Initiate Transaction Mutation sample
 ```
 mutation {
+
     initiateTransaction(input:{
     amount:5.00
-    paymentServiceProviderUuid:"f6212ae6-ec92-46fc-92fd-a227bdb4e0d9"
-    insureeUuid:"CC308EC4-E8D6-4BC4-B8C8-9D7F7079AA48"
+    paymentServiceProviderUuid:"5c15ecbd-ef82-40e0-9842-a5a28cedb2b6"
+    insureeUuid:"0EFC5C60-AC2E-4F2C-840D-022271005D5A"
+
     }),{
-    internalId
+    responseMessage
+    Success
     uuids
     clientMutationId
   }
@@ -200,21 +203,27 @@ mutation {
 
 ```
 mutation {
+
     processTransaction(input:{
-    uuid:"031889a2-1def-4a89-a928-6eb56334da80"
+    uuid:"5ff3e97e-f765-413f-929c-6c9044ccaae6"
     amount:5.00
-    otp:"213"
-    paymentServiceProviderUuid:"f6212ae6-ec92-46fc-92fd-a227bdb4e0d9"
-    insureeUuid:"CC308EC4-E8D6-4BC4-B8C8-9D7F7079AA48"
+    otp:"364407"
+    paymentServiceProviderUuid:"5c15ecbd-ef82-40e0-9842-a5a28cedb2b6"
+    insureeUuid:"0EFC5C60-AC2E-4F2C-840D-022271005D5A"
+    clientMutationId:""
     }),{
-    internalId
-    clientMutationId
-    
-    
-    
+
+  responseCode
+  responseMessage
+  clientMutationId
+  Success
+  detail
+  clientMutationId
+
+
   }
-
-
+ 
+ 
   }
 ```
 
