@@ -36,7 +36,6 @@ def initiate_request(insuree_wallet:str, merchant_wallet:str, amount:float, pin:
             "Content-Type": "application/json",
             "Authorization": tokens['Authorization']
         }
-
         response = requests.request("POST", url, headers=headers, data=payload)
         response_data = response.json()
         if response.status_code in [200,201] and response_data['responseCode'] == '1':
@@ -46,10 +45,6 @@ def initiate_request(insuree_wallet:str, merchant_wallet:str, amount:float, pin:
          return [{
                     'message': _("Payment request failed with exception"),
                     'detail': str(exc)}]
-
-
-
-
 
 def process_request(otp: str, transaction_id: str,) :
     try:
@@ -62,20 +57,17 @@ def process_request(otp: str, transaction_id: str,) :
                 "transactionId": transaction_id
             }
         })
-
         headers = {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
             'Authorization': tokens['Authorization'] 
         }
-
         response = requests.request("POST", url, headers=headers, data=payload)
         response_data = response.json()
-        if response.status_code in [200,201] and response_data['responseCode'] == '1':
+        if response.status_code in [200,201]:
             return response_data
-        return None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+        return None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
     except requests.exceptions.RequestException as exc:
-        print(exc)
         return [{
                     'message': _("Payment request failed with exception"),
                     'detail': str(exc)}]

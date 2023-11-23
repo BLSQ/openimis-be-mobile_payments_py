@@ -5,15 +5,15 @@ MODULE_NAME = "mobile_payment"
 DEFAULT_CFG = {
       
       "default_validations_disabled":False,
-      "gql_query_payment_transaction_perms":["111001"],
-      "gql_query_payment_service_provider":   ["101305"],
-      "gql_mutation_create_payment_transaction_perms":["1110002"],
-      "gql_mutation_update_payment_transaction_perms":["1110004"],
-      "gql_mutation_verify_insuree_perms":["1110003"],
-      "gql_mutation_process_payment_perms":["1110001"],
-      "gql_mutation_create_payment_service_provider":["101306"],
-      "gql_mutation_update_payment_service_provider":["101307"],
-      "gql_mutation_delete_payment_service_provider":["101308"],
+      "gql_query_payment_transaction_perms":["125000"],
+      "gql_mutation_create_payment_transaction_perms":["125001"],
+      "gql_mutation_update_payment_transaction_perms":["125002"],
+      "gql_query_verify_insuree_perms":["125003"],
+      "gql_mutation_process_payment_perms":["125004"],
+      "gql_query_payment_service_provider":["125005"],
+      "gql_mutation_create_payment_service_provider":["125006"],
+      "gql_mutation_update_payment_service_provider":["125007"],
+      "gql_mutation_delete_payment_service_provider":["125008"],
         
 }
 
@@ -24,7 +24,7 @@ class MobilepaymentConfig(AppConfig):
     gql_mutation_create_payment_transaction_perms =[]
     gql_query_payment_service_provider =   []
     gql_mutation_update_payment_transaction_perms = []
-    gql_mutation_verify_insuree_perms = []
+    gql_query_verify_insuree_perms = []
     gql_mutation_process_payment_perms = []
     gql_mutation_create_payment_service_provider =   []
     gql_mutation_update_payment_service_provider =   []
@@ -35,7 +35,7 @@ class MobilepaymentConfig(AppConfig):
           MobilepaymentConfig.gql_query_payment_service_provider  = cfg["gql_query_payment_service_provider"]
           MobilepaymentConfig.gql_mutation_create_payment_transaction_perms = cfg["gql_mutation_create_payment_transaction_perms"]
           MobilepaymentConfig.gql_mutation_update_payment_transaction_perms = cfg["gql_mutation_update_payment_transaction_perms"]
-          MobilepaymentConfig.gql_mutation_verify_insuree_perms = cfg["gql_mutation_verify_insuree_perms"]
+          MobilepaymentConfig.gql_query_verify_insuree_perms = cfg["gql_query_verify_insuree_perms"]
           MobilepaymentConfig.gql_mutation_process_payment_perms = cfg["gql_mutation_process_payment_perms"]
           MobilepaymentConfig.gql_mutation_create_payment_service_provider =   cfg["gql_mutation_create_payment_service_provider"]
           MobilepaymentConfig.gql_mutation_update_payment_service_provider =   cfg["gql_mutation_update_payment_service_provider"]

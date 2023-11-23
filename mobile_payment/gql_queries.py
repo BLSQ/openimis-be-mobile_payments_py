@@ -50,11 +50,9 @@ class CustomMessagetype(graphene.ObjectType):
 
 class PaymentServiceProviderType(DjangoObjectType):
     class Meta:
-
         model = PaymentServiceProvider
         interfaces = (graphene.relay.Node,)
         filter_fields = {
-
             "id": ["exact"],
             "uuid": ["exact"],
             "name":["exact"],
