@@ -14,9 +14,11 @@ from .gql_mutations import *
 
 class Query(graphene.ObjectType):
 
-    payment_service_provider = graphene.List(
-        PaymentServiceProviderType
+    payment_service_provider =  OrderedDjangoFilterConnectionField(
+        PaymentServiceProviderType,
+        str=graphene.String()
     )
+    
     verify_insuree = graphene.Field(
         VerifyGQLtype,
         chf_id=graphene.String(required=True),
@@ -108,7 +110,7 @@ class Query(graphene.ObjectType):
     def resolve_payment_service_provider(self, info, **kwargs):
         if not info.context.user.has_perms(MobilepaymentConfig.gql_query_payment_service_provider):
             raise PermissionDenied(_("unauthorized"))
-        return PaymentServiceProvider.objects.all()
+        return PaymentServiceProvider.filter_queryset().filter(is_external_api_user=False).all()
 
 class Mutation(graphene.ObjectType):
 

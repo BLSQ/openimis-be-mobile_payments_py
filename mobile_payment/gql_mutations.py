@@ -22,7 +22,7 @@ from django.core.exceptions import ValidationError,PermissionDenied
 logger = logging.getLogger(__name__)
 
 
-class PaymentTransactionBase:
+class PaymentTransactionInputType:
     id = graphene.Int(required=False, read_only= True)
     uuid = graphene.String(required=False)
     amount = graphene.Float()
@@ -210,20 +210,22 @@ class DeletePaymentServiceProvider(OpenIMISMutation):
                 'message': "Faild to delete Wallet. An exception had occured",
                 'detail': str(exc)}]
         
-class InitiateTransactionMutation(OpenIMISMutation):
+class InitiateTransactionMutation(graphene.relay.ClientIDMutation):
     uuids = graphene.String()
+    Success = graphene.Boolean()
+    responseMessage = graphene.String()
+    detail = graphene.String()
     """
     Create a mutation for making a payment transaction
     """
     _mutation_module = "mobile_payment"
     _mutation_class = "InitiateTransactionMutation"
     
-    class Input(PaymentTransactionBase, OpenIMISMutation.Input):
+    class Input(PaymentTransactionInputType):
         pass
         
     @classmethod
     def mutate_and_get_payload(cls, root, info, **data) -> Optional[str]:
-        response = super().mutate_and_get_payload(root, info, **data)
         try:
             if info.context.user is AnonymousUser:
                 raise ValidationError(_("mutation.authentication_required"))
@@ -240,6 +242,8 @@ class InitiateTransactionMutation(OpenIMISMutation):
                 _("invalid insuree_uuid")
             )
             insuree_wallet = insuree.insuree_wallet
+            if insuree_wallet is None:
+                return InitiateTransactionMutation(responseMessage=_("Insuree wallet does not exist"), Success=False)
             psp = get_object_by_uuid(
                 PaymentServiceProvider.objects,
                 payment_service_provider_uuid,
@@ -252,29 +256,34 @@ class InitiateTransactionMutation(OpenIMISMutation):
             if qmoney_request['responseCode'] == '1':
                 data['psp_transaction_id'] = qmoney_request['data']['transactionId']
                 transaction = update_or_create_transaction(data, info)
+                return InitiateTransactionMutation(uuids=transaction.uuid, Success=True, responseMessage=_("Success"))
             else:
                 raise Exception(_("Failed to initiate payment"))
-            return InitiateTransactionMutation(uuids=transaction.uuid, internal_id=response.internal_id)
         except Exception as exc:
-            logger.exception("transaction.mutation.failed_to_create_transaction")
-            return [{
-                    'message': _("transaction.mutation.failed_to_create_transaction"),
-                    'detail': str(exc)}] 
+            logger.exception("transaction.mutation.failed_to_create_initiate_transaction")
+            return InitiateTransactionMutation(
+                responseMessage=_("transaction.mutation.failed_to_create_initiate_transaction"), 
+                detail=str(exc), 
+                Success=False
+            )
         
-class  ProcessTransactionMutation(OpenIMISMutation):
+class ProcessTransactionMutation(graphene.relay.ClientIDMutation):
     """
-    create a mutaion to update a payment transaction
+    create a mutation to update a payment transaction
     """
-
     _mutation_module = "mobile_payment"
     _mutation_class = "ProcessTransactionMutation"
-
-    class Input(PaymentTransactionBase, OpenIMISMutation.Input):
+    
+    class Input(PaymentTransactionInputType):
         pass
-
+    
+    responseMessage = graphene.String()
+    responseCode = graphene.String()
+    Success = graphene.Boolean()
+    detail = graphene.String()
+    
     @classmethod
-    def mutate_and_get_payload(cls, root, info, **data) -> Optional[str]:
-        response = super().mutate_and_get_payload(root, info, **data)
+    def mutate_and_get_payload(cls, root, info, **data):
         try:
             if info.context.user is AnonymousUser:
                 raise ValidationError(_("mutation.authentication_required"))
@@ -282,26 +291,29 @@ class  ProcessTransactionMutation(OpenIMISMutation):
                 raise PermissionDenied(_("unathorized"))
             client_mutation_id = data.get("client_mutation_id")
             transaction_uuid = data['uuid']
-            transacton = PaymentTransaction.objects.get(uuid=transaction_uuid )
+            transacton = PaymentTransaction.objects.get(uuid=transaction_uuid)
             if not transacton:
-                raise PermissionDenied (_("invalid transaction_uuid"))
+                raise PermissionDenied(_("invalid transaction_uuid"))
             transaction_id = transacton.psp_transaction_id
             otp = data['otp']
-            logger.info(f' Transaction_id = {transaction_id}')
-            logger.info(f'otp =  {otp}')
+            logger.info(f'Transaction_id = {transaction_id}')
+            logger.info(f'otp = {otp}')
             qmoney_process = process_request(otp, transaction_id)
-            if  qmoney_process['responseCode'] == '1':
+            if qmoney_process['responseCode'] == '1':
                 data['status'] = True
                 update_or_create_transaction(data, info)
+                return ProcessTransactionMutation(responseCode='1', responseMessage='Success', Success=True)
+            elif qmoney_process['responseCode'] == '-120008':
+                return ProcessTransactionMutation(responseCode='-120008', responseMessage="Insufficent Balance in your Qmoney wallet", Success=False)
             else:
-                raise Exception(_("Failed to initiate payment"))
-            return ProcessTransactionMutation(internal_id=response.internal_id)
+                return ProcessTransactionMutation(responseCode=int(qmoney_process['responseCode']), responseMessage=qmoney_process["responseMessage"], Success=False)
         except Exception as exc:
-            logger.exception("transaction.mutation.failed_to_process_transaction")
-            return [{
-                    'message': _("transaction.mutation.failed_to_process_transaction"),
-                    'detail': str(exc)}]
-
+            logger.exception("transaction.mutation.failed_to_update_process_transaction")
+            return ProcessTransactionMutation(responseCode='0', 
+                                              responseMessage=_("transaction.mutation.failed_to_update_process_transaction"), 
+                                              detail=str(exc), 
+                                              Success=False
+                                            )
 # ***********************************Endpoint Process_Payment***********************************           
 class ProductInput(graphene.InputObjectType):
     product_name = graphene.String(required=True)
@@ -345,7 +357,7 @@ def handle_payment(user, data):
             and product_name == product.name
             and product_code == product.code
         ):
-            psp_service_provider = PaymentServiceProvider.objects.get(uuid=psp_service_provider_uuid)
+            psp_service_provider = PaymentServiceProvider.filter_queryset().filter(uuid=psp_service_provider_uuid).first()
             transaction = PaymentTransaction.objects.create(amount=amount, payment_service_provider=psp_service_provider, status=1, psp_transaction_id = psp_transaction_id, json_content=json_content, datetime=date.today())
             transaction.save()
             premium = Premium.objects.create(amount=transaction.amount, policy=policy, pay_date=date.today(), pay_type="M", payment_transaction=transaction, audit_user_id =audit_user_id)
