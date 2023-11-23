@@ -8,9 +8,11 @@ The Mobile Payment module is designed to enable seamless payment processing for 
 
 2. **Endpoint Exposition**: The module also exposes two essential endpoints, `verify_insuree` and `process_payment`. These endpoints can be utilized by other payment service providers seeking to offer policyholders the ability to make payments through their services. This flexibility allows for integration with a variety of payment providers, making it a versatile solution for policyholder payments..
 
-Qmoney implementation includes a frontend in the contrubution module of FE link: [openimis-fe-contribution_js](https://github.com/BLSQ/openimis-fe-contribution_js/tree/develop).
-
+Qmoney implementation requires two frontend module installed : [openimis-fe-contribution_js](https://github.com/BLSQ/openimis-fe-contribution_js/tree/develop).
+and [openimis-fe-insuree_js](https://github.com/BLSQ/openimis-fe-insuree_js/tree/impl/gambia)
+### ERP Diagram of Mobile Payment
 ![Entity Relationship Diagram](workflow/Mobile_Payment%20Database.jpg)
+
 "Link to the workflow diagram and database of the Mobile Payment module can be found here [workflow](https://github.com/BLSQ/openimis-be-mobile_payments_py/tree/feature/gambia/workflow)
 
 
