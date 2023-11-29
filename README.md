@@ -44,7 +44,7 @@ Once a transaction is initiated and successfully processed, it is added to the c
 
 ### Qmoney Sequence Diagram
 
-![Qmoney Sequence Diagram](workflow/Qmoney_Sequnece%20Diagram.jpg)
+![Qmoney Sequence Diagram](workflow/Qmoney_Sequence%20Diagram.jpg)
 
 ### Note
 
