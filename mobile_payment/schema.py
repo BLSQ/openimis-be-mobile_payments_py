@@ -108,7 +108,7 @@ class Query(graphene.ObjectType):
         return gql_optimizer.query(PaymentTransaction.objects.filter(*filters).all(), info)
     
     def resolve_payment_service_provider(self, info, **kwargs):
-        if not info.context.user.has_perms(MobilepaymentConfig.gql_query_payment_service_provider):
+        if not info.context.user.has_perms(MobilepaymentConfig.gql_query_payment_service_provider_perms):
             raise PermissionDenied(_("unauthorized"))
         return PaymentServiceProvider.filter_queryset().filter(is_external_api_user=False).all()
 

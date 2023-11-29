@@ -41,19 +41,6 @@ class PaymentServiceProviderInputType(OpenIMISMutation.Input):
     interactive_user_uuid= graphene.String(required= False)
     is_external_api_user = graphene.Boolean(default = False)
 
-def reset_payment_service_provider_before_udate(payment_service_provider):
-    payment_service_provider.psp_name = None
-    payment_service_provider.psp_account = None
-    payment_service_provider.psp_pin = None
-    
-def reset_transaction_before_update(transaction):
-    transaction.amount = None
-    transaction.insuree_uuid = None
-    transaction.payment_service_provider_uuid =  None
-    transaction.status = None
-    transaction.transaction_id = None
-    transaction.datetime = None
-    
 def update_or_create_payment_service_provider(data, user):
     # Check if client_mutation_id is passed in data
     if "client_mutation_id" in data:
@@ -140,7 +127,7 @@ class CreatePaymentServiceProvider(OpenIMISMutation):
                 raise ValidationError(
                 _("mutation.authentication_required"))
             #checks if user has permission to add a payment service provider
-            if not user.has_perms(MobilepaymentConfig.gql_mutation_create_payment_service_provider):
+            if not user.has_perms(MobilepaymentConfig.gql_mutation_create_payment_service_provider_perms):
                 raise PermissionDenied(_("unauthorized"))
             client_mutation_id = data.get("client_mutation_id")
             # it create data inputs from the premium graphql
@@ -163,7 +150,7 @@ class UpdatePaymentServiceProvider(OpenIMISMutation):
     @classmethod
     def async_mutate(cls, user, **data):
         try:
-            if not user.has_perms(MobilepaymentConfig.gql_mutation_update_payment_service_provider):
+            if not user.has_perms(MobilepaymentConfig.gql_mutation_update_payment_service_provider_perms):
                 raise PermissionDenied(_("unauthorized"))
             #get merchant uuid
             payment_service_provider_uuid = data.pop('uuid')
@@ -192,7 +179,7 @@ class DeletePaymentServiceProvider(OpenIMISMutation):
     def async_mutate(cls, user, **data):
         try:
             # Check if user has permission
-            if not user.has_perms(MobilepaymentConfig.gql_mutation_delete_payment_service_provider):
+            if not user.has_perms(MobilepaymentConfig.gql_mutation_delete_payment_service_provider_perms):
                 raise PermissionDenied(_("unauthorized"))
             
             from core import datetime
@@ -229,7 +216,7 @@ class InitiateTransactionMutation(graphene.relay.ClientIDMutation):
         try:
             if info.context.user is AnonymousUser:
                 raise ValidationError(_("mutation.authentication_required"))
-            if not info.context.user.has_perms(MobilepaymentConfig.gql_mutation_update_payment_transaction_perms):
+            if not info.context.user.has_perms(MobilepaymentConfig.gql_mutation_create_payment_transaction_perms):
                 raise PermissionDenied(_("unauthorized"))
             client_mutation_id = data.get("client_mutation_id")
             insuree_uuid = data["insuree_uuid"]
@@ -287,7 +274,7 @@ class ProcessTransactionMutation(graphene.relay.ClientIDMutation):
         try:
             if info.context.user is AnonymousUser:
                 raise ValidationError(_("mutation.authentication_required"))
-            if not info.context.user.has_perms(MobilepaymentConfig.gql_mutation_create_payment_transaction_perms):
+            if not info.context.user.has_perms(MobilepaymentConfig.gql_mutation_update_payment_transaction_perms):
                 raise PermissionDenied(_("unathorized"))
             client_mutation_id = data.get("client_mutation_id")
             transaction_uuid = data['uuid']
