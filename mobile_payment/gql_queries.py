@@ -60,6 +60,6 @@ class PaymentServiceProviderType(DjangoObjectType):
             "email":["exact"],
             "is_external_api_user": ["exact"],
         }
-        exclude = ['psp_password', 'psp_pin']
+        exclude = ['pin']
 
         connection_class = ExtendedConnection

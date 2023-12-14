@@ -9,10 +9,10 @@ The Mobile Payment module is designed to enable seamless payment processing for 
 2. **Endpoint Exposition**: The module also exposes two essential endpoints, `verify_insuree` and `process_payment`. These endpoints can be utilized by other payment service providers seeking to offer policyholders the ability to make payments through their services. This flexibility allows for integration with a variety of payment providers, making it a versatile solution for policyholder payments..
 
 Qmoney implementation requires two frontend module installed : [openimis-fe-contribution_js](https://github.com/BLSQ/openimis-fe-contribution_js/tree/develop).
-and [openimis-fe-insuree_js](https://github.com/BLSQ/openimis-fe-insuree_js/tree/impl/gambia)
-### ERP Diagram of Mobile Payment
-![Entity Relationship Diagram](workflow/Mobile_Payment%20Database.jpg)
+and 
+[openimis-fe-insuree_js](https://github.com/BLSQ/openimis-fe-insuree_js/tree/impl/gambia)
 
+![Entity Relationship Diagram](workflow/Mobile_Payment%20Database.jpg)
 "Link to the workflow diagram and database of the Mobile Payment module can be found here [workflow](https://github.com/BLSQ/openimis-be-mobile_payments_py/tree/feature/gambia/workflow)
 
 
@@ -44,7 +44,7 @@ Once a transaction is initiated and successfully processed, it is added to the c
 
 ### Qmoney Sequence Diagram
 
-![Qmoney Sequence Diagram](workflow/Qmoney_Sequence%20Diagram.jpg)
+![Qmoney Sequence Diagram](workflow/Qmoney_Sequnece%20Diagram.jpg)
 
 ### Note
 
@@ -184,15 +184,12 @@ The following can be added in an insurees detail of insuree_wallet
 #### Initiate Transaction Mutation sample
 ```
 mutation {
-
     initiateTransaction(input:{
     amount:5.00
-    paymentServiceProviderUuid:"5c15ecbd-ef82-40e0-9842-a5a28cedb2b6"
-    insureeUuid:"0EFC5C60-AC2E-4F2C-840D-022271005D5A"
-
+    paymentServiceProviderUuid:"f6212ae6-ec92-46fc-92fd-a227bdb4e0d9"
+    insureeUuid:"CC308EC4-E8D6-4BC4-B8C8-9D7F7079AA48"
     }),{
-    responseMessage
-    Success
+    internalId
     uuids
     clientMutationId
   }
@@ -203,139 +200,62 @@ mutation {
 
 ```
 mutation {
-
     processTransaction(input:{
-    uuid:"5ff3e97e-f765-413f-929c-6c9044ccaae6"
+    uuid:"031889a2-1def-4a89-a928-6eb56334da80"
     amount:5.00
-    otp:"364407"
-    paymentServiceProviderUuid:"5c15ecbd-ef82-40e0-9842-a5a28cedb2b6"
-    insureeUuid:"0EFC5C60-AC2E-4F2C-840D-022271005D5A"
-    clientMutationId:""
+    otp:"213"
+    paymentServiceProviderUuid:"f6212ae6-ec92-46fc-92fd-a227bdb4e0d9"
+    insureeUuid:"CC308EC4-E8D6-4BC4-B8C8-9D7F7079AA48"
     }),{
-
-  responseCode
-  responseMessage
-  clientMutationId
-  Success
-  detail
-  clientMutationId
-
-
+    internalId
+    clientMutationId
+    
+    
+    
   }
- 
- 
+
+
   }
 ```
 
-## Second Workflow 
+## Mobile Payment Workflow  2
 
 # Accessing Custom Endpoints
 
-The Mobile Payment module exposes two essential endpoints: `Verify_insuree` and `Process_payment`. These endpoints are designed to be utilized by other payment service providers that wish to enable policyholders to make payments through their services, .
+The Mobile Payment module features two crucial endpoints: `verifyInsuree` and `Process_payment`. These endpoints facilitate payments for insurees through various payment service providers.
 
-##### Note 
-The `Verify_insured` function is designed to display all idle policies that require payment for the insured. On the other hand, the `Process_payment` function manages the payment process by first checking if the policy returned is idle. Subsequently, it verifies whether the payment service provider has returned the expected values before processing the payment.
+## Functionality Overview
+
+- **Verify_insuree:** Displays idle policies requiring payment for the insuree.
+- **Process_payment:** Process_payment: Handles payment processing, verifies policy validity, checks payment service provider values, and executes the payment transaction.
 
 ## Mobile Payment Endpoint Sequence Diagram
 
-![Mobile Payment Endpoint Sequence Diagram](workflow/Mobile_Payemt%20Endpoin%20Sequence%20Diagramt.jpg)
+![Mobile Payment Endpoint Sequence Diagram](workflow/Mobile_Payment_Endpoint_Sequence_Diagram.jpg)
 
 ## Configuring Payment Service Providers
 
-When configuring a Payment Service Provider (PSP), it's essential to consider the following:
+To enable third-party operations on `Verify_insuree` and `Process_payment` endpoints, follow these steps:
 
-- If the PSP is a third-party entity that requires access to these endpoints, you should provide the following information during configuration:
+### Step 1: Create an Interactive User
 
-  - `psp_name`: The name of the Payment Service Provider.
-  - `is_external_api`: This field should be selected when the PSP intends to connect to our endpoint. It indicates that the payment service provider is an external entity requiring access to our services.
-  - `interactive_user`: This field represents a foreign key to the OpenIMIS core user models. Selecting an interactive user is crucial to specify the user authorized to make requests to our endpoint.
-#### Mutation example
-```
-mutation{
-   createPaymentServiceProvider(input:{
-    name:"Afrimoney"
-    interactiveUserUuid:"C60E1A15-745A-412F-8A36-A0017ADADCD7"
-    isExternalApiUser:true
-  }),
-  {
-    clientMutationId
-  }
-  }
-```
-Please make sure to select the `is_external_api` field when you want the Payment Service Provider to connect to our endpoint, and choose an appropriate `interactive_user` to define the user who will be granted the ability to make requests to our endpoint. These configurations are fundamental for effective control and management of access.
+1. Create a user with the `Interactive User` type. This can be performed in the OpenIMIS frontend by an admin managing the system or via the Django admin panel.
+
+### Step 2: Create a Payment Service Provider
+
+1. Create a Payment Service Provider (PSP) and assign it a user, selecting the previously created `Interactive User`. This can be done through the Django Admin panel or GraphQL playground.
+
+For creating the Payment Service Provider, the following information is required:
+
+- `psp_name`: The name of the Payment Service Provider.
+- `is_external_api`: Select this field for PSPs intending to connect to our endpoint. It indicates that the PSP is an external entity requiring access to our services.
+- `interactive_user`: A crucial field representing a foreign key to the OpenIMIS core user models. Choosing the appropriate interactive user is essential to specify the authorized user for making requests to our endpoint.
+
+![Link to Mobile Payment Endpoint API Documentation](../openimis-be-mobile_payment_py/Api_Documentation/Mobile_Payment_API%20Document%20(1).pdf)
 
 
-## Generating Access Tokens
-
-To enable any Payment Service Provider to make requests to our endpoint, they must be provided with user details and use these details to generate an access token. This access token serves as the key to interact with our endpoint, allowing for secure communication.
-
-It's important to note that the user details should correspond to an interactive user that was created and added during the configuration process when setting up the Payment Service Provider. This interactive user is granted the necessary permissions and serves as the authorized entity for making requests to our endpoint.
-sample 
-By ensuring that the user details are associated with an interactive user during the PSP configuration, you facilitate the secure generation of access tokens and maintain control over the interactions with our endpoint.
-
-## Mutation Example
-**mutation to generate access_token**
-
-```
-mutation {
-  tokenAuth(username: " enter user name", password: " Enter password"){
-    refreshToken
-    token
-  }
-}
 
 
-```
 
-**Apply the following in the request headers of your graphql_playground**
-```
-{
 
-  "Authorization": "Bearer your access_token_here"
-}
-```
-
-**mutation and querys that needs valid_access_token**
-
-#
-
-**Veryfy_inusree quries**
-
-```
-query{
-  verifyInsuree(chfId:"070707070"){
- 
-      lastName
-      firstName
-      message
-      policies{
-        amount
-        status
-        productName
-        productCode
-        token
-        
-      }
-  }
-}
- 
-```
-
-**Process Mutation**
-#note json_content field is optional
-```
-mutation{
-   processPayment(inputData:{
-    chfId:"070707070",
-    amount:""
-    pspTransactionId:""
-    policy:{
-      productName:""
-      productCode:""
-      token:""  
-    },
-    jsonExt:"{\" enter here\": \" enter here\"}"
-    })
-  }
-```
 

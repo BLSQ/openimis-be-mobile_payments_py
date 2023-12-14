@@ -116,7 +116,7 @@ class Mutation(graphene.ObjectType):
 
     initiate_Transaction = InitiateTransactionMutation.Field()
     process_Transaction =  ProcessTransactionMutation.Field()
-    process_payment = ProcessPayment.Field()
+    process_payment = ProcessPaymentMutation.Field()
     create_payment_service_provider =  CreatePaymentServiceProvider.Field()
     update_payment_service_provider =  UpdatePaymentServiceProvider.Field()
     delete_payment_service_provider =  DeletePaymentServiceProvider.Field()

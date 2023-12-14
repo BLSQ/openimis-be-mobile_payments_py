@@ -306,7 +306,7 @@ class ProductInput(graphene.InputObjectType):
     product_name = graphene.String(required=True)
     product_code = graphene.String(required=True)
     token = graphene.String(required = True)
-class ProcessPaymentInput(graphene.InputObjectType):
+class ProcessPaymentInput:
     chf_id = graphene.String(required=True)
     amount = graphene.Decimal(required=True)
     psp_transaction_id = graphene.String(required = True)
@@ -345,6 +345,8 @@ def handle_payment(user, data):
             and product_code == product.code
         ):
             psp_service_provider = PaymentServiceProvider.filter_queryset().filter(uuid=psp_service_provider_uuid).first()
+            if not psp_service_provider:
+                raise ValidationError("You are not authorized to perform this operation")
             transaction = PaymentTransaction.objects.create(amount=amount, payment_service_provider=psp_service_provider, status=1, psp_transaction_id = psp_transaction_id, json_content=json_content, datetime=date.today())
             transaction.save()
             premium = Premium.objects.create(amount=transaction.amount, policy=policy, pay_date=date.today(), pay_type="M", payment_transaction=transaction, audit_user_id =audit_user_id)
@@ -365,34 +367,46 @@ def update_policy(premium, policy):
     policy.effective_date = premium.pay_date if premium.pay_date > policy.start_date else policy.start_date
     policy.save()
 
-class ProcessPayment(graphene.Mutation):
-    class Arguments:
-        input_data = ProcessPaymentInput(required=True)
+class ProcessPaymentMutation(graphene.relay.ClientIDMutation):
+    Success = graphene.Boolean()
+    responseMessage = graphene.String()
+    detail = graphene.String()
 
-    Output = graphene.String
-
-    @staticmethod
-    def mutate(root, info, input_data=None):
+    class Input(ProcessPaymentInput):
+        pass
+    
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **data):
         try:
             if info.context.user is AnonymousUser:
                 raise ValidationError(_("mutation.authentication_required"))
             username = info.context.user.username
             audit_user_id = info.context.user.id_for_audit
-            psp = PaymentServiceProvider.objects.get(interactive_user__login_name=username,  is_external_api_user=True)
-            if not psp:
-                raise ValidationError(
-                "You are not authorized to perform this operation")
-            input_data['psp_service_provider_uuid'] = psp.uuid
-            input_data['audit_user_id'] = audit_user_id
-            result = handle_payment(info,input_data)
-            logger.info(input_data)
-            api_record = ApiRecord.objects.create(request_date=input_data, response_date=result)
+            try:
+                psp = PaymentServiceProvider.objects.filter(interactive_user__login_name=username, is_external_api_user=True).first()
+                if not psp:
+                    raise ValidationError("You are not authorized to perform this operation")
+            except PaymentServiceProvider.DoesNotExist:
+                raise ValidationError("You are not authorized to perform this operation")
+            data['psp_service_provider_uuid'] = psp.uuid
+            data['audit_user_id'] = audit_user_id
+            result = handle_payment(info,data)
+            logger.info(data)
+            api_record = ApiRecord.objects.create(request_date=data, response_date=result)
             api_record.save()
             if result["success"]:
-                return {"message":"Payment process successful", "Stauts":201 }
+                return ProcessPaymentMutation(
+                    Success=True,
+                    responseMessage="Payment processed successfully",  
+                )
             else:
-                return {"message":result["message"], "Stauts":400 } 
+                return ProcessPaymentMutation(
+                    Success=False,
+                    responseMessage=result["message"],  
+                )
         except Exception as exc:
-            api_record = ApiRecord.objects.create(request_date=input_data, response_date=str(exc))
-            api_record.save()
-            raise ValidationError("Process failed to work: " + str(exc))
+            return ProcessPaymentMutation(
+                Success=False,
+                responseMessage="Process failed to work",
+                detail = str(exc)
+            )
