@@ -251,7 +251,7 @@ For creating the Payment Service Provider, the following information is required
 - `is_external_api`: Select this field for PSPs intending to connect to our endpoint. It indicates that the PSP is an external entity requiring access to our services.
 - `interactive_user`: A crucial field representing a foreign key to the OpenIMIS core user models. Choosing the appropriate interactive user is essential to specify the authorized user for making requests to our endpoint.
 
-![Link to Mobile Payment Endpoint API Documentation](../openimis-be-mobile_payment_py/Api_Documentation/Mobile_Payment_API%20Document%20(1).pdf)
+![Link to Mobile Payment Endpoint API Documentation](Api_Documentation/Mobile_Payment_API%20Document%20(1).pdf)
 
 
 
