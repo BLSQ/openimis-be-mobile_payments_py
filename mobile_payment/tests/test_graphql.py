@@ -8,9 +8,6 @@ from django.conf import settings
 from graphene_django.utils.testing import GraphQLTestCase
 from django.test import TestCase
 from graphql_jwt.shortcuts import get_token
-from product.test_helpers import create_test_product
-from policy.test_helpers import create_test_policy
-from insuree.test_helpers import create_test_insuree
 from mobile_payment.tests.test_helpers import create_test_payment_service_provider_is_external_api_user
 from insuree.models import Relation
 from rest_framework import status
@@ -204,6 +201,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
         
         self.assertEquals(response.status_code, status.HTTP_200_OK)
         content = json.loads(response.content)
+        print(f'chf_id2: {content}')
         # Check if response has errors
         self.assertResponseNoErrors(response)
         self.assertIn('verifyInsuree', content['data'])
@@ -222,7 +220,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
     
     def test_process_payment_mutation_amount_too_small(self):
         amount = "1000"
-        chf_id = "070707070" 
+        chf_id = "070707070" #change the chf_id to an insuree that has an idle policy
         psp_transactionId = "txid_3845938338"
           # Call the first test case function to retrieve its returned content
         returned_content = self.test_verify_insuree_display_idle_policies()
