@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 import json
 from .models import ApiUtilitie
+from retrying import retry
 import threading
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ def get_access_token(api_name):
 
     return current_token
 
-
+@retry(stop_max_attempt_number=3, wait_fixed=60000, retry_on_exception=lambda exc: isinstance(exc, requests.exceptions.RequestException))
 def requests_new_access_token(api_name):
     try:
         auth_url =settings.PSP_QMONEY_AUTH_URL
@@ -71,6 +72,7 @@ def requests_new_access_token(api_name):
             return new_token,new_expiry_date
         return None
     except requests.exceptions.RequestException as exc:
-        return [{
+        logger.exception(f"Retrying due to: {str(exc)}")
+        return ({
                     'message': _("fail to get a new token"),
-                    'detail': str(exc)}]
+                    'detail': str(exc)})

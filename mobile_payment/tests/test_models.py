@@ -1,12 +1,11 @@
 import core
 from django.test import TestCase
+from unittest import mock
 from insuree.models import Relation
 from mobile_payment.models import PaymentServiceProvider, PaymentTransaction
-from insuree.test_helpers import create_test_insuree
-from core.test_helpers import create_test_interactive_user
-from product.test_helpers import create_test_product
-from policy.test_helpers import create_test_policy
-from mobile_payment.tests.test_helpers import create_test_payment_service_provider_is_not_external_api_user, create_test_payment_service_provider_is_external_api_user, create_test_payment_transaction, update_payment_transaction
+from core.test_helpers import create_test_interactive_user, create_test_technical_user
+from core.models import TechnicalUser, User
+from mobile_payment.tests.test_helpers import *
 from django.utils import timezone
 
 class TestMobilePaymentHelpers(TestCase):
@@ -48,3 +47,11 @@ class TestMobilePaymentHelpers(TestCase):
         self.assertEqual(updated_transaction.otp, "654321")
         self.assertEqual(updated_transaction.psp_transaction_id, 'txn_84y4838y3y38')
         # Add more assertions as needed for the updated object's attributes
+
+    
+    def test_create_test_create_idle_policy(self):
+        insuree, product, policy= create_test_insuree_data_with_policy()
+        self.assertIsInstance(policy, Policy)
+        self.assertEqual(policy.status, Policy.STATUS_IDLE)
+        # Add more assertions as needed for the created object's attributes
+

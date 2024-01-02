@@ -8,7 +8,7 @@ from django.conf import settings
 from graphene_django.utils.testing import GraphQLTestCase
 from django.test import TestCase
 from graphql_jwt.shortcuts import get_token
-from mobile_payment.tests.test_helpers import create_test_payment_service_provider_is_external_api_user
+from mobile_payment.tests.test_helpers import *
 from insuree.models import Relation
 from rest_framework import status
 
@@ -35,6 +35,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
         cls.user_authorized = create_test_interactive_user(username="testuser1")
         cls.psp = create_test_payment_service_provider_is_external_api_user(cls.user_authorized)
         cls.user_authorized_token = get_token(cls.user_authorized, DummyContext(user=cls.user_authorized))
+        cls.insuree,cls.product, cls.policy = create_test_insuree_data_with_policy()
 
     def test_verify_insuree_not_authorized_user(self):
         chf_id = "070707070" #pass in a valid isnuree_number here
@@ -168,7 +169,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
         self.assertEqual(verify_insuree_data['message'], expected_message)
     
     def test_verify_insuree_display_idle_policies(self):
-        chf_id = "070707070" #pass in an valid isnuree_number here with and idle policy
+        chf_id = self.insuree.chf_id #pass in an valid isnuree_number here with and idle policy
         """
         asserts that chf_id entered is valid and display the idle policies only.
 
@@ -220,7 +221,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
     
     def test_process_payment_mutation_amount_too_small(self):
         amount = "1000"
-        chf_id = "070707070" #change the chf_id to an insuree that has an idle policy
+        chf_id = self.insuree.chf_id #change the chf_id to an insuree that has an idle policy
         psp_transactionId = "txid_3845938338"
           # Call the first test case function to retrieve its returned content
         returned_content = self.test_verify_insuree_display_idle_policies()
@@ -276,7 +277,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
     def test_process_payment_mutation_amount_too_big(self):
 
         amount = "20000" #enter amount greater than the product price
-        chf_id = "070707070" #eneter valid chf_id
+        chf_id = self.insuree.chf_id #eneter valid chf_id
         psp_transactionId = "txid_3845938338"
           # Call the first test case function to retrieve its returned content
         returned_content = self.test_verify_insuree_display_idle_policies()
@@ -329,7 +330,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
 
     def test_process_payment_mutation_unauthorized_user(self):
         amount = "20000" #enter amount less than the product price
-        chf_id = "070707070" #eneter valid chf_id
+        chf_id = self.insuree.chf_id #eneter valid chf_id
         psp_transactionId = "txid_3845938338"
           # Call the first test case function to retrieve its returned content
         returned_content = self.test_verify_insuree_display_idle_policies()
@@ -382,7 +383,7 @@ class MobilePaymentTestCases(GraphQLTestCase):
 
     def test_process_payment_mutation_success(self):
         amount = "10000" #enter amount == to the product price
-        chf_id = "070707070" #eneter valid chf_id that has an idle policy
+        chf_id = self.insuree.chf_id #eneter valid chf_id that has an idle policy
         psp_transactionId = "txid_3845938338"
         
           # Call the first test case function to retrieve its returned content

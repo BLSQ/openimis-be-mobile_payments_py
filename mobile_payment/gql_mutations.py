@@ -18,7 +18,7 @@ from graphql_jwt.shortcuts import get_token
 from django.utils.translation import gettext_lazy as _
 from .api_request import initiate_request, process_request
 from django.contrib.auth.models import AnonymousUser
-from django.core.exceptions import ValidationError,PermissionDenied
+from django.core.exceptions import ValidationError,PermissionDenied, ObjectDoesNotExist
 logger = logging.getLogger(__name__)
 
 
@@ -69,11 +69,11 @@ def update_or_create_payment_service_provider(data, user):
     return payment_service_provider 
 
 def get_object_by_uuid(queryset, uuid, error_message):
-    obj = queryset.filter(uuid=uuid).first()
-    if not obj:
-        raise Exception(error_message % (uuid,))
-    return obj
-
+ 
+        obj = queryset.filter(uuid=uuid).first()
+        if not obj:
+            raise Exception(error_message % (uuid))
+        return obj
 def update_or_create_transaction(data, info):
     # Check if client_mutation_id is passed in data
     if "client_mutation_id" in data:
@@ -237,15 +237,13 @@ class InitiateTransactionMutation(graphene.relay.ClientIDMutation):
                 _("invalid payment_service_provider_uuid")
             )
             address = psp.account
-            pin = psp.pin
+            pin = psp.decrypt_pin()
             # Initiate a request for payment
             qmoney_request = initiate_request(insuree_wallet, address, amount, pin)
             if qmoney_request['responseCode'] == '1':
                 data['psp_transaction_id'] = qmoney_request['data']['transactionId']
                 transaction = update_or_create_transaction(data, info)
                 return InitiateTransactionMutation(uuids=transaction.uuid, Success=True, responseMessage=_("Success"))
-            else:
-                raise Exception(_("Failed to initiate payment"))
         except Exception as exc:
             logger.exception("transaction.mutation.failed_to_create_initiate_transaction")
             return InitiateTransactionMutation(

@@ -1,5 +1,8 @@
 from mobile_payment.models import PaymentServiceProvider, PaymentTransaction
 from insuree.test_helpers import create_test_insuree
+from product.test_helpers import create_test_product
+from  policy.test_helpers import create_test_policy
+from policy.models import  Policy
 from django.utils import timezone
 from django.conf import settings
 
@@ -60,4 +63,34 @@ def update_payment_transaction(payment_transaction, update_props):
         setattr(payment_transaction, key, value)
     payment_transaction.save()
 
-        
+def create_test_insuree_data_with_policy():
+        insuree = create_test_insuree(with_family=True, 
+                                      custom_props={
+                                        "last_name": "Wolve",
+                                        "other_names": "Lone",
+                                        "chf_id": "80809090",
+                                    },
+                                   family_custom_props ={
+                                        "validity_from": "2019-01-01",
+                                        "head_insuree_id": 8,  # dummy
+                                        "audit_user_id": -1,
+                                     })
+        product = create_test_product("WCR101",custom_props={
+                                        "lump_sum": 10000.00,
+                                        "max_members": 1,
+                                        "grace_period_enrolment": 1,
+                                        "insurance_period": 12,
+                                        "date_from": "2024-01-01",
+                                        "date_to": "2049-01-01",
+                                     })
+        policy = create_test_policy(product, insuree, custom_props={
+            
+                                     "status": Policy.STATUS_IDLE,
+                                     "stage": Policy.STAGE_NEW,
+                                     "enroll_date": "2023-12-31",
+                                     "start_date": "2024-01-02",
+                                     "validity_from": "2019-01-01",
+                                     "effective_date": "2019-01-01",
+                                  })
+        return insuree, product, policy
+    
