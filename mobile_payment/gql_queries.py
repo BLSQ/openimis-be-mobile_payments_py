@@ -5,7 +5,6 @@ from insuree.gql_queries import InsureeGQLType
 from core import prefix_filterset, ExtendedConnection, filter_validity
 
 
-
 class PaymentTransactionsGQLType(DjangoObjectType):
 
     """ Transaction Query fields"""

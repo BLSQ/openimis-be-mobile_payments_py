@@ -1,0 +1,1 @@
+deault_app_config = 'mobile_payment.apps.MobilepaymentConfig'

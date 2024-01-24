@@ -23,7 +23,7 @@ def create_test_payment_service_provider_is_external_api_user(username, custom_p
     from core import datetime
     return PaymentServiceProvider.objects.create(
         **{
-            "name": "Afrimoney",
+            "name": "Naffa",
             "account": "123456789",
             "interactive_user": username.i_user,
             "is_external_api_user": True,

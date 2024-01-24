@@ -12,7 +12,8 @@ from core.models import InteractiveUser
 from datetime import date
 from mobile_payment.apps import MobilepaymentConfig
 from .models import PaymentTransaction, Insuree, PaymentServiceProvider, ApiRecord, PaymentServiceProviderMutation
-from contribution.models import Premium, Policy
+from contribution.models import Premium
+from policy.models import   Policy
 from product.models import Product
 from graphql_jwt.shortcuts import get_token
 from django.utils.translation import gettext_lazy as _

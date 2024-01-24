@@ -54,22 +54,6 @@ class  PaymentServiceProvider(core_models.VersionedModel):
         managed = True
         db_table = "tblPaymentServiceProviders"
     
-    
-   
-class ApiUtilitie(models.Model):
-    id  = models.AutoField(db_column="ApiId", primary_key=True)
-    name = models.CharField(db_column="Name", max_length=50, blank= True, null=True)
-    access_token = models.TextField(db_column="AccessToken", blank=True, null=True)
-    access_TokenExpiry = models.DateTimeField(db_column="ExpiryDate", blank= True, null= True)
-
-    def __str__(self):
-        return f"{self.name}"
-
-    class Meta:
-        managed = True
-        db_table = 'tblApiUtilitie'
-
-
 class PaymentTransaction(core_models.VersionedModel):
     id  = models.AutoField(db_column="PaymentTransactionId", primary_key=True )
     uuid = models.CharField(

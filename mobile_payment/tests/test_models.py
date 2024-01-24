@@ -21,7 +21,7 @@ class TestMobilePaymentHelpers(TestCase):
         username= create_test_interactive_user(username='test_user')
         paymentServiceProvider = create_test_payment_service_provider_is_external_api_user(username)
         self.assertIsInstance(paymentServiceProvider, PaymentServiceProvider)
-        self.assertEqual(paymentServiceProvider.name, "Afrimoney")
+        self.assertEqual(paymentServiceProvider.name, "Naffa")
         self.assertEqual(paymentServiceProvider.is_external_api_user, True)
         # Add more assertions as needed for the created object's attributes
     

@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 import json
-from .models import ApiUtilitie
 from retrying import retry
 import threading
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -18,32 +18,35 @@ def access_token():
     with lock:
         try:
             NOW = datetime.now()
-            api_name = 'Qmoney_token'
-            access_token = get_access_token(api_name)
+            access_token = get_access_token()
             return {"Authorization": f"Bearer {access_token}"}
         except Exception as e:
             logging.exception("failed to get access token")
             return e
 
 
-def get_access_token(api_name):
-    api_utility = ApiUtilitie.objects.get(name=api_name)
-    current_token = api_utility.access_token
-    token_expiry_date = api_utility.access_TokenExpiry
+def get_access_token():
+    api_token = cache.get('api_token')
+    api_expiry_date = cache.get('api_expiry_date')
 
-    if token_expiry_date is None or token_expiry_date <= datetime.now():
-        new_access_token, new_expiry_date = requests_new_access_token(api_name)
+    if api_token is None:
+        new_api_token, new_expiry_date = requests_new_access_token()
+        cache.set('api_token', new_api_token)
+        cache.set('api_expiry_date', new_expiry_date)
+        return new_api_token
+    elif api_expiry_date < datetime.now():
+        cache.delete('api_token')
+        cache.delete('api_expiry_date')
 
-        api_utility.access_token = new_access_token
-        api_utility.access_TokenExpiry = new_expiry_date
-        api_utility.save()
-
-        return new_access_token
-
-    return current_token
+        new_api_token, new_expiry_date = requests_new_access_token()
+        cache.set('api_token', new_api_token)
+        cache.set('api_expiry_date', new_expiry_date)
+        return new_api_token
+    return api_token
+    
 
 @retry(stop_max_attempt_number=3, wait_fixed=60000, retry_on_exception=lambda exc: isinstance(exc, requests.exceptions.RequestException))
-def requests_new_access_token(api_name):
+def requests_new_access_token():
     try:
         auth_url =settings.PSP_QMONEY_AUTH_URL
         grantype=settings.PSP_QMONEY_GRANTTYPE
@@ -69,7 +72,7 @@ def requests_new_access_token(api_name):
             new_token = response_data ['data']['access_token']
             expiry_seconds = int(response_data['data']['accessTokenExpiry']) - 60
             new_expiry_date = datetime.now() + timedelta(seconds=expiry_seconds)
-            return new_token,new_expiry_date
+            return new_token, new_expiry_date
         return None
     except requests.exceptions.RequestException as exc:
         logger.exception(f"Retrying due to: {str(exc)}")

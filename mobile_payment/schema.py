@@ -9,8 +9,10 @@ from .apps import MobilepaymentConfig
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.utils.translation import gettext_lazy as _
 from .gql_queries import *
+from insuree.models import Insuree
+from policy.models import Policy
 from .gql_mutations import *
-
+# from .gql_mutationsTest import *
 
 class Query(graphene.ObjectType):
 

@@ -6,9 +6,6 @@ from django.conf import settings
 pspQmoneyName=settings.PSP_QMONEY_NAME
 pspQmoneyAccount=settings.PSP_QMONEY_ACCOUNT
 pspQmoneyPin=settings.PSP_QMONEY_PIN
-qmoneyApiName=settings.QMONEY_API_NAME
-qmoneyApiAccessToken=settings.QMONEY_API_ACCESS_TOKEN
-qmoneyApiAccessTokenExpiry=settings.QMONEY_API_ACCESS_TOKEN_EXPIRY
 
 def add_initial_data(mobile_payment, schema_editor):
     PaymentServiceProvider = mobile_payment.get_model('mobile_payment', 'PaymentServiceProvider')
@@ -18,18 +15,10 @@ def add_initial_data(mobile_payment, schema_editor):
                                           pin=pspQmoneyPin
                                         )
     # Add more data as needed
-    ApiUtilitie = mobile_payment.get_model('mobile_payment', 'ApiUtilitie')
-    ApiUtilitie.objects.create(
-                                name=qmoneyApiName, 
-                                access_token=qmoneyApiAccessToken, 
-                                access_TokenExpiry=qmoneyApiAccessTokenExpiry
-                            )
 
 def reverse_add_initial_data(mobile_payment, schema_editor):
     PaymentServiceProvider = mobile_payment.get_model('mobile_payment', 'PaymentServiceProvider')
     PaymentServiceProvider.objects.filter(name=pspQmoneyName).delete()
-    ApiUtilitie = mobile_payment.get_model('mobile_payment', 'ApiUtilitie')
-    ApiUtilitie.objects.filter(name=qmoneyApiName).delete()
 
 
 
